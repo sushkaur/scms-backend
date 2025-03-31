@@ -8,9 +8,23 @@ const generateToken = (user) => {
   });
 };
 
+// Allowed roles to prevent arbitrary role injection
+const allowedRoles = ['admin', 'supplier', 'buyer'];
+
+
 // Register Controller
+
 exports.register = async (req, res) => {
-  const { username, password, role } = req.body;
+  const { username, password, role = 'buyer' } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Username and password are required' });
+  }
+
+  if (role && !allowedRoles.includes(role)) {
+    return res.status(400).json({ message: 'Invalid role specified' });
+  }
+
   try {
     const userExists = await User.findOne({ username });
     if (userExists) {
@@ -21,15 +35,30 @@ exports.register = async (req, res) => {
     await user.save();
 
     const token = generateToken(user);
-    res.status(201).json({ token, role: user.role });
+    // Set secure HTTP-only cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'Strict',
+    });
+    // Optionally include the role in the response (or set another cookie if needed)
+    res.status(200).json({ role: user.role });
   } catch (err) {
+    console.error('Registration error:', err);
     res.status(500).json({ message: 'Registration failed', error: err.message });
   }
 };
 
+
 // Login Controller
+
 exports.login = async (req, res) => {
   const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Username and password are required' });
+  }
+
   try {
     const user = await User.findOne({ username });
     if (!user) {
@@ -44,6 +73,7 @@ exports.login = async (req, res) => {
     const token = generateToken(user);
     res.status(200).json({ token, role: user.role });
   } catch (err) {
+    console.error('Login error:', err);
     res.status(500).json({ message: 'Login failed', error: err.message });
   }
 };

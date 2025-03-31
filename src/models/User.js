@@ -8,6 +8,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     enum: ['admin', 'supplier', 'buyer'],
     default: 'buyer'
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
 });
 

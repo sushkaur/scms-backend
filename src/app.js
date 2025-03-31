@@ -1,28 +1,41 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
 const morgan = require('morgan');
+const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 // Initialize Express app
 const app = express();
 
 // Middleware
-app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+app.use(helmet());
+app.use(compression());
+app.use(cookieParser());
+
+// CORS setup (with credentials for cookies)
+app.use(cors({
+  origin: 'http://localhost:4200',
+  credentials: true
+}));
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
 const testRoutes = require('./routes/testRoutes');
 const inventoryRoutes = require('./routes/inventoryRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 
-// Use routes
+// Route mounting
 app.use('/api/auth', authRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
-// Test route
+// Health check/test route
 app.get('/', (req, res) => {
   res.send('SCMS Backend API is running...');
 });
